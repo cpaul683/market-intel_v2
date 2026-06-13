@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="MIB" />
+  <meta name="theme-color" content="#0d1520" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <title>CEE FAC · Market Intelligence</title>
+  <style>
+    :root {
+      --navy:      #0d1520;
+      --navy2:     #111d2e;
+      --navy3:     #172035;
+      --panel:     #0a1018;
+      --steel:     #4a9eff;
+      --steel-dim: #1e3a5c;
+      --wire:      rgba(74,158,255,0.18);
+      --text:      #d8e4f0;
+      --text2:     #7a9ab8;
+      --text3:     #3d5a78;
+      --mono:      'SF Mono', 'Fira Code', 'Consolas', monospace;
+      --sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --safe-top:    env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --radius:    6px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: var(--navy); color: var(--text); font-family: var(--sans); font-size: 15px; overflow: hidden; }
+
+    /* ── LAYOUT ───────────────────────────────────────────── */
+    .app { display: flex; flex-direction: column; height: 100%; padding-top: var(--safe-top); }
+
+    /* ── HEADER ───────────────────────────────────────────── */
+    .header {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid var(--wire);
+      background: var(--panel);
+    }
+    .header-signal {
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .signal-bar {
+      width: 18px; height: 2px; background: var(--steel);
+      animation: signal 2.4s ease-in-out infinite;
+    }
+    .signal-bar:nth-child(1) { width: 6px;  animation-delay: 0s; }
+    .signal-bar:nth-child(2) { width: 12px; animation-delay: 0.3s; }
+    .signal-bar:nth-child(3) { width: 18px; animation-delay: 0.6s; }
+    @keyframes signal { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+    .header-text { flex: 1; }
+    .header-label {
+      font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--steel); margin-bottom: 2px;
+    }
+    .header-title { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: 0.01em; }
+    .header-key-btn {
+      font-family: var(--mono); font-size: 11px; color: var(--text3);
+      background: none; border: 1px solid var(--text3); border-radius: 4px;
+      padding: 4px 8px; cursor: pointer; transition: color 0.15s, border-color 0.15s;
+    }
+    .header-key-btn:hover { color: var(--steel); border-color: var(--steel); }
+
+    /* ── TABS ─────────────────────────────────────────────── */
+    .tabs {
+      flex-shrink: 0; display: flex;
+      border-bottom: 1px solid var(--wire);
+      background: var(--panel);
+    }
+    .tab {
+      flex: 1; padding: 9px 0;
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text3);
+      border: none; background: none; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s;
+    }
+    .tab.active { color: var(--steel); border-bottom-color: var(--steel); }
+
+    /* ── PANELS ───────────────────────────────────────────── */
+    .panel { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+    .panel.active { display: flex; }
+
+    /* ── SCROLLABLE CONTAINER ─────────────────────────────── */
+    .scroll { flex: 1; overflow-y: auto; padding: 20px 16px; }
+    .scroll::-webkit-scrollbar { width: 4px; }
+    .scroll::-webkit-scrollbar-track { background: transparent; }
+    .scroll::-webkit-scrollbar-thumb { background: var(--steel-dim); border-radius: 2px; }
+
+    /* ── FORM FIELDS ──────────────────────────────────────── */
+    .field { margin-bottom: 18px; }
+    .field-label {
+      display: block; margin-bottom: 6px;
+      font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--steel);
+    }
+    .field-hint { font-size: 12px; color: var(--text3); margin-bottom: 6px; line-height: 1.5; }
+    .field input, .field textarea, .field select {
+      width: 100%; background: var(--navy3);
+      border: 1px solid var(--wire); border-radius: var(--radius);
+      color: var(--text); font-size: 14px; font-family: var(--sans);
+      padding: 10px 12px; outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    .field input::placeholder, .field textarea::placeholder { color: var(--text3); }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--steel); }
+    .field textarea { resize: vertical; min-height: 80px; }
+
+    .tag-group { display: flex; flex-wrap: wrap; gap: 7px; }
+    .tag {
+      padding: 5px 11px; border-radius: 20px; cursor: pointer;
+      font-size: 12px; font-family: var(--mono); letter-spacing: 0.04em;
+      border: 1px solid var(--text3); color: var(--text3);
+      background: none; transition: all 0.15s;
+      user-select: none;
+    }
+    .tag.selected { border-color: var(--steel); color: var(--steel); background: var(--steel-dim); }
+
+    .divider { height: 1px; background: var(--wire); margin: 22px 0; }
+
+    .run-btn {
+      width: 100%; padding: 13px;
+      background: var(--steel); color: var(--navy);
+      border: none; border-radius: var(--radius);
+      font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em;
+      text-transform: uppercase; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .run-btn:hover { opacity: 0.88; }
+    .run-btn:disabled { opacity: 0.35; cursor: default; }
+
+    /* ── API KEY PANEL ────────────────────────────────────── */
+    .key-section { max-width: 480px; }
+    .key-section h2 {
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--steel); margin-bottom: 10px;
+    }
+    .key-section p { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 16px; }
+    .key-section a { color: var(--steel); }
+    .key-save-btn {
+      padding: 9px 20px; background: var(--steel); color: var(--navy);
+      border: none; border-radius: var(--radius);
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
+      text-transform: uppercase; font-weight: 700; cursor: pointer;
+      margin-top: 8px;
+    }
+    .key-save-btn:active { opacity: 0.8; }
+    .key-status { font-family: var(--mono); font-size: 11px; margin-top: 8px; }
+    .key-status.ok { color: #4ec97a; }
+    .key-status.none { color: var(--text3); }
+
+    /* ── BRIEFING OUTPUT ──────────────────────────────────── */
+    .briefing-panel { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+    .briefing-meta {
+      flex-shrink: 0; padding: 10px 16px;
+      border-bottom: 1px solid var(--wire);
+      display: flex; align-items: center; gap: 10px;
+      background: var(--panel);
+    }
+    .meta-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--steel); flex-shrink: 0;
+    }
+    .meta-dot.idle { background: var(--text3); }
+    .meta-dot.live { animation: pulse-dot 1s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .meta-label { font-family: var(--mono); font-size: 11px; color: var(--text2); flex: 1; letter-spacing: 0.06em; }
+    .meta-copy-btn {
+      font-family: var(--mono); font-size: 10px; color: var(--text3);
+      background: none; border: 1px solid var(--text3); border-radius: 3px;
+      padding: 3px 8px; cursor: pointer; letter-spacing: 0.06em;
+    }
+    .meta-copy-btn:hover { color: var(--steel); border-color: var(--steel); }
+
+    .briefing-output {
+      flex: 1; overflow-y: auto;
+      padding: 20px 16px calc(20px + var(--safe-bottom));
+      font-family: var(--sans); font-size: 14px; line-height: 1.75;
+      color: var(--text);
+      background: var(--panel);
+    }
+    .briefing-output::-webkit-scrollbar { width: 4px; }
+    .briefing-output::-webkit-scrollbar-thumb { background: var(--steel-dim); border-radius: 2px; }
+
+    .briefing-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; gap: 12px; color: var(--text3);
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
+      text-align: center;
+    }
+    .briefing-empty .grid-icon {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; opacity: 0.4;
+    }
+    .briefing-empty .grid-icon span {
+      width: 8px; height: 8px; background: var(--steel); border-radius: 1px;
+      display: block;
+    }
+
+    /* Markdown-like output styling */
+    .briefing-output h1, .briefing-output h2 {
+      font-family: var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--steel); margin: 24px 0 10px; font-size: 11px;
+      border-bottom: 1px solid var(--wire); padding-bottom: 6px;
+    }
+    .briefing-output h1:first-child { margin-top: 0; }
+    .briefing-output h3 {
+      font-size: 14px; font-weight: 600; color: var(--text); margin: 16px 0 6px;
+    }
+    .briefing-output p { margin-bottom: 10px; }
+    .briefing-output ul { padding-left: 18px; margin-bottom: 10px; }
+    .briefing-output li { margin-bottom: 4px; }
+    .briefing-output strong { color: #e8f0ff; font-weight: 600; }
+    .briefing-output em { color: var(--text2); font-style: normal; font-size: 13px; }
+    .briefing-output hr { border: none; border-top: 1px solid var(--wire); margin: 20px 0; }
+
+    .streaming-cursor {
+      display: inline-block; width: 7px; height: 14px;
+      background: var(--steel); margin-left: 2px;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ── HISTORY ──────────────────────────────────────────── */
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-card {
+      background: var(--navy3); border: 1px solid var(--wire);
+      border-radius: var(--radius); padding: 12px 14px; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .history-card:hover { border-color: var(--steel); }
+    .history-card-meta {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    }
+    .history-card-date { font-family: var(--mono); font-size: 10px; color: var(--steel); letter-spacing: 0.08em; }
+    .history-card-del {
+      margin-left: auto; background: none; border: none;
+      color: var(--text3); cursor: pointer; font-size: 15px; padding: 0 2px;
+    }
+    .history-card-del:hover { color: #e06060; }
+    .history-card-preview { font-size: 13px; color: var(--text2); line-height: 1.5; }
+    .history-card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .history-tag {
+      font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em;
+      color: var(--text3); border: 1px solid var(--text3); border-radius: 3px;
+      padding: 2px 6px;
+    }
+
+    .no-api-notice {
+      background: #1a1200; border-bottom: 1px solid #443200;
+      font-size: 12px; color: #c09040; text-align: center;
+      padding: 8px 16px; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-signal">
+      <div class="signal-bar"></div>
+      <div class="signal-bar"></div>
+      <div class="signal-bar"></div>
+    </div>
+    <div class="header-text">
+      <div class="header-label">VIG Re · CEE FAC</div>
+      <div class="header-title">Market Intelligence</div>
+    </div>
+    <button class="header-key-btn" onclick="switchTab('key')">API KEY</button>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" id="tab-brief" onclick="switchTab('brief')">Briefing</button>
+    <button class="tab" id="tab-output" onclick="switchTab('output')">Output</button>
+    <button class="tab" id="tab-history" onclick="switchTab('history')">History</button>
+    <button class="tab" id="tab-key" onclick="switchTab('key')">Key</button>
+  </div>
+
+  <!-- BRIEFING FORM -->
+  <div class="panel active" id="panel-brief">
+    <div id="no-api-notice" class="no-api-notice" style="display:none">
+      No API key set — tap <strong>KEY</strong> to add one before running a briefing.
+    </div>
+    <div class="scroll">
+
+      <div class="field">
+        <label class="field-label">Cedants / Markets</label>
+        <div class="field-hint">Enter key cedants or countries, comma-separated.</div>
+        <input type="text" id="f-cedants" placeholder="e.g. Kooperativa, Generali CEE, PZU Poland" />
+      </div>
+
+      <div class="field">
+        <label class="field-label">Risk Topics</label>
+        <div class="field-hint">Select all relevant risk areas for this briefing.</div>
+        <div class="tag-group" id="risk-tags">
+          <span class="tag" data-val="Property CAT">Property CAT</span>
+          <span class="tag" data-val="Engineering / CECR">Engineering / CECR</span>
+          <span class="tag" data-val="Casualty / Liability">Casualty / Liability</span>
+          <span class="tag" data-val="Flood / Nat Cat">Flood / Nat Cat</span>
+          <span class="tag" data-val="Cyber">Cyber</span>
+          <span class="tag" data-val="Political Risk">Political Risk</span>
+          <span class="tag" data-val="Treaty vs FAC dynamics">Treaty vs FAC dynamics</span>
+          <span class="tag" data-val="Capacity / Retrocession">Capacity / Retrocession</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Custom Instruction</label>
+        <div class="field-hint">Any additional focus, context, or specific questions for this briefing.</div>
+        <textarea id="f-custom" placeholder="e.g. Focus on 1.1.2027 renewals. Flag any changes in Allianz CEE's FAC appetite since Q3 2025."></textarea>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label class="field-label">Output Sections</label>
+        <div class="tag-group" id="section-tags">
+          <span class="tag selected" data-val="cee-macro">CEE Macro &amp; Economy</span>
+          <span class="tag selected" data-val="natcat">Nat Cat / Loss Env.</span>
+          <span class="tag selected" data-val="pricing">Pricing &amp; Capacity</span>
+          <span class="tag selected" data-val="regulatory">Regulatory</span>
+          <span class="tag selected" data-val="cedant">Cedant Intelligence</span>
+          <span class="tag selected" data-val="actions">Talking Points &amp; Actions</span>
+        </div>
+      </div>
+
+      <button class="run-btn" id="run-btn" onclick="runBriefing()">▶ &nbsp; Generate Briefing</button>
+      <div style="height: calc(20px + var(--safe-bottom))"></div>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="panel" id="panel-output">
+    <div class="briefing-meta">
+      <div class="meta-dot idle" id="meta-dot"></div>
+      <div class="meta-label" id="meta-label">NO TRANSMISSION</div>
+      <button class="meta-copy-btn" onclick="copyBriefing()">COPY</button>
+    </div>
+    <div class="briefing-output" id="briefing-output">
+      <div class="briefing-empty">
+        <div class="grid-icon">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+        AWAITING TRANSMISSION
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="panel" id="panel-history">
+    <div class="scroll">
+      <div class="history-list" id="history-list">
+        <div class="briefing-empty" style="height:auto; padding: 3rem 0;">
+          <div class="grid-icon">
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+          </div>
+          NO PRIOR TRANSMISSIONS
+        </div>
+      </div>
+      <div style="height: calc(20px + var(--safe-bottom))"></div>
+    </div>
+  </div>
+
+  <!-- API KEY -->
+  <div class="panel" id="panel-key">
+    <div class="scroll">
+      <div class="key-section">
+        <h2>Anthropic API Key</h2>
+        <p>
+          Your key is stored only in this browser's localStorage and is never transmitted except in direct calls to the Anthropic API.
+          Get a key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.
+        </p>
+        <div class="field">
+          <label class="field-label">API Key</label>
+          <input type="password" id="key-input" placeholder="sk-ant-..." autocomplete="off" />
+        </div>
+        <button class="key-save-btn" onclick="saveKey()">Save Key</button>
+        <div class="key-status none" id="key-status">No key stored</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+const STORAGE = {
+  key:     'mib_apikey_v1',
+  history: 'mib_history_v1',
+};
+
+let apiKey = '';
+let history = [];
+let streaming = false;
+let currentRaw = '';
+
+// ── INIT ───────────────────────────────────────────────
+(function init() {
+  apiKey = localStorage.getItem(STORAGE.key) || '';
+  try { history = JSON.parse(localStorage.getItem(STORAGE.history)) || []; } catch(e) {}
+
+  // tag interactions
+  document.querySelectorAll('#risk-tags .tag, #section-tags .tag').forEach(t => {
+    t.addEventListener('click', () => t.classList.toggle('selected'));
+  });
+
+  updateKeyStatus();
+  updateNoApiNotice();
+  renderHistory();
+})();
+
+// ── TABS ───────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── API KEY ────────────────────────────────────────────
+function saveKey() {
+  const val = document.getElementById('key-input').value.trim();
+  if (!val || val.startsWith('•')) return;
+  apiKey = val;
+  localStorage.setItem(STORAGE.key, apiKey);
+  document.getElementById('key-input').value = '••••••••••••••••';
+  updateKeyStatus();
+  updateNoApiNotice();
+}
+
+function updateKeyStatus() {
+  const el = document.getElementById('key-status');
+  if (apiKey) {
+    el.textContent = '✓ Key stored';
+    el.className = 'key-status ok';
+  } else {
+    el.textContent = 'No key stored';
+    el.className = 'key-status none';
+  }
+}
+
+function updateNoApiNotice() {
+  document.getElementById('no-api-notice').style.display = apiKey ? 'none' : 'block';
+}
+
+// ── BUILD PROMPT ───────────────────────────────────────
+function buildPrompt() {
+  const cedants = document.getElementById('f-cedants').value.trim();
+  const custom  = document.getElementById('f-custom').value.trim();
+  const risks   = [...document.querySelectorAll('#risk-tags .tag.selected')].map(t => t.dataset.val);
+  const sections = [...document.querySelectorAll('#section-tags .tag.selected')].map(t => t.dataset.val);
+
+  const sectionMap = {
+    'cee-macro':   '1. CEE Macro & Economic Outlook',
+    'natcat':      '2. Nat Cat & Loss Environment',
+    'pricing':     '3. Market Pricing & Capacity Trends',
+    'regulatory':  '4. Regulatory & Legislative Developments',
+    'cedant':      '5. Cedant-Specific Intelligence',
+    'actions':     '6. Recommended Talking Points & Action Items',
+  };
+
+  const sectionList = sections.map(s => sectionMap[s]).filter(Boolean).join('\n');
+
+  let prompt = `You are a senior market intelligence analyst at VIG Re, specialising in Central and Eastern European facultative reinsurance. Produce a structured market intelligence briefing for the underwriting team.`;
+
+  if (cedants) prompt += `\n\nCEDANTS / MARKETS IN FOCUS: ${cedants}`;
+  if (risks.length) prompt += `\n\nRISK TOPICS: ${risks.join(', ')}`;
+  if (custom) prompt += `\n\nSPECIAL INSTRUCTIONS: ${custom}`;
+
+  prompt += `\n\nPRODUCE THE FOLLOWING SECTIONS (use ## as section headers, ### for subsections):
+${sectionList}
+
+Format: professional, dense, actionable. No filler. Each section should contain concrete observations, data points where relevant, and clear implications for the FAC underwriter. Use bullet points within sections for scannability. End with a crisp action items list under Talking Points & Actions.`;
+
+  return prompt;
+}
+
+// ── RUN BRIEFING ───────────────────────────────────────
+async function runBriefing() {
+  if (!apiKey) { switchTab('key'); return; }
+  if (streaming) return;
+
+  const prompt = buildPrompt();
+  streaming = true;
+  currentRaw = '';
+
+  const runBtn = document.getElementById('run-btn');
+  runBtn.disabled = true;
+  runBtn.textContent = '● Transmitting…';
+
+  // Switch to output
+  switchTab('output');
+
+  const dot = document.getElementById('meta-dot');
+  const metaLabel = document.getElementById('meta-label');
+  dot.className = 'meta-dot live';
+  metaLabel.textContent = 'RECEIVING TRANSMISSION…';
+
+  const outputEl = document.getElementById('briefing-output');
+  outputEl.innerHTML = '<span class="streaming-cursor"></span>';
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        stream: true,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.error?.message || 'API error ' + resp.status);
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            currentRaw += evt.delta.text;
+            outputEl.innerHTML = renderMarkdown(currentRaw) + '<span class="streaming-cursor"></span>';
+            outputEl.scrollTop = outputEl.scrollHeight;
+          }
+        } catch(e) {}
+      }
+    }
+
+    // Finalise
+    outputEl.innerHTML = renderMarkdown(currentRaw);
+    dot.className = 'meta-dot';
+    dot.style.background = '#4ec97a';
+    const ts = new Date().toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    metaLabel.textContent = 'RECEIVED · ' + ts;
+
+    // Save to history
+    const cedants = document.getElementById('f-cedants').value.trim();
+    const risks   = [...document.querySelectorAll('#risk-tags .tag.selected')].map(t => t.dataset.val);
+    history.unshift({ ts, cedants, risks, content: currentRaw });
+    if (history.length > 20) history.pop();
+    localStorage.setItem(STORAGE.history, JSON.stringify(history));
+    renderHistory();
+
+  } catch(err) {
+    outputEl.innerHTML = `<p style="color:#e06060; font-family:var(--mono); font-size:13px;">TRANSMISSION FAILED<br><br>${err.message}</p>`;
+    dot.className = 'meta-dot';
+    dot.style.background = '#e06060';
+    metaLabel.textContent = 'ERROR';
+  }
+
+  streaming = false;
+  runBtn.disabled = false;
+  runBtn.textContent = '▶   Generate Briefing';
+}
+
+// ── RENDER MARKDOWN ────────────────────────────────────
+function renderMarkdown(raw) {
+  return raw
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    // headings
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // bold / em
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // hr
+    .replace(/^---$/gm, '<hr>')
+    // bullets
+    .replace(/^\s*[-•]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m => '<ul>' + m + '</ul>')
+    // paragraphs (double newlines)
+    .replace(/\n{2,}/g, '\n</p><p>')
+    .replace(/^/, '<p>').replace(/$/, '</p>')
+    // clean empty paras
+    .replace(/<p>\s*<\/p>/g, '')
+    .replace(/<p>(<h[123]>)/g, '$1')
+    .replace(/(<\/h[123]>)<\/p>/g, '$1')
+    .replace(/<p>(<ul>)/g, '$1')
+    .replace(/(<\/ul>)<\/p>/g, '$1')
+    .replace(/<p>(<hr>)<\/p>/g, '$1');
+}
+
+// ── COPY ───────────────────────────────────────────────
+function copyBriefing() {
+  if (!currentRaw) return;
+  navigator.clipboard.writeText(currentRaw).then(() => {
+    const btn = document.querySelector('.meta-copy-btn');
+    btn.textContent = 'COPIED';
+    setTimeout(() => btn.textContent = 'COPY', 1500);
+  });
+}
+
+// ── HISTORY ───────────────────────────────────────────
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (!history.length) {
+    el.innerHTML = `<div class="briefing-empty" style="height:auto; padding: 3rem 0;">
+      <div class="grid-icon"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      NO PRIOR TRANSMISSIONS
+    </div>`;
+    return;
+  }
+  el.innerHTML = history.map((item, i) => `
+    <div class="history-card" onclick="loadHistoryItem(${i})">
+      <div class="history-card-meta">
+        <span class="history-card-date">${item.ts}</span>
+        <button class="history-card-del" onclick="deleteHistory(event,${i})">×</button>
+      </div>
+      <div class="history-card-preview">${item.cedants || 'No cedants specified'}</div>
+      <div class="history-card-tags">
+        ${(item.risks||[]).slice(0,4).map(r=>`<span class="history-tag">${r}</span>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadHistoryItem(i) {
+  currentRaw = history[i].content;
+  const outputEl = document.getElementById('briefing-output');
+  outputEl.innerHTML = renderMarkdown(currentRaw);
+  const dot = document.getElementById('meta-dot');
+  dot.className = 'meta-dot';
+  dot.style.background = '#4ec97a';
+  document.getElementById('meta-label').textContent = 'ARCHIVE · ' + history[i].ts;
+  switchTab('output');
+}
+
+function deleteHistory(e, i) {
+  e.stopPropagation();
+  history.splice(i, 1);
+  localStorage.setItem(STORAGE.history, JSON.stringify(history));
+  renderHistory();
+}
+</script>
+</body>
+</html>
